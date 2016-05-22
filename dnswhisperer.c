@@ -32,6 +32,15 @@ typedef struct timeval timeval;
 /*
  *
  */
+typedef struct app_config
+{
+	const char * dns_server;
+	const char * log_file;
+	const char * blacklist;
+	int          daemonize;
+
+} app_config;
+
 typedef struct pending_req
 {
 	sockaddr_in  addr;
@@ -232,8 +241,101 @@ int relay_r(srv_socket * srv, int sk_cli, io_buf * buf)
 /*
  *
  */
+const char * get_param(int argc, char ** argv, int i, const char * what)
+{
+	if (i == argc)
+		die("Error: %s is missing an argument\n", what);
+
+	return argv[i];
+}
+
+void syntax()
+{
+	printf(
+	    "Syntax: dnswhisperer [-l <arg>] [-f <arg>] [-s <arg>] [-d]\n"
+	    "\n"
+	    "        -l <file>         -  log to <file>\n"
+	    "        -f <file>         -  read blacklist from <file>\n"
+	    "        -s <IP4_address>  -  DNS server to use\n"
+	    "        -d                -  daemonize\n"
+	    "        -h, -?            -  show this message\n"
+	);
+
+	exit(1);
+}
+
+void parse_args(int argc, char ** argv, app_config * conf)
+{
+	int i;
+
+	for (i=1; i<argc; i++)
+	{
+		char * arg = argv[i];
+		if (! strcmp(arg, "-s"))
+			conf->dns_server = get_param(argc, argv, ++i, "-s");
+		else
+		if (! strcmp(arg, "-l"))
+			conf->log_file = get_param(argc, argv, ++i, "-l");
+		else
+		if (! strcmp(arg, "-f"))
+			conf->blacklist = get_param(argc, argv, ++i, "-f");
+		else
+		if (! strcmp(arg, "-d"))
+			conf->daemonize = 1;
+		else
+			syntax();
+	}
+}
+
+void daemonize(int keep_stdout)
+{
+	pid_t pid;
+
+	chdir("/");
+
+	pid = fork();
+	if (pid < 0)
+		die("fork() failed with %d\n", errno);
+
+	if (pid > 0)
+		exit(0);
+		
+	if (setsid() < 0)
+		die("setsid() failed with %d\n", errno);
+
+	pid = fork();
+	if (pid != 0)
+		exit(0);
+
+	// stdin
+	close(0);
+	open("/dev/null", O_RDWR);
+
+	// stderr
+	close(2);
+	dup(0);
+		
+	// stdout
+	if (! keep_stdout)
+	{
+		close(1);
+		dup(0);
+	}
+}
+
+/*
+ *
+ */
 int main(int argc, char ** argv)
 {
+	app_config  conf =
+	{
+		"208.67.222.222",     /* dns_server         */
+		NULL,                 /* log_file -> stdout */
+		"dnswhisperer.txt",   /* blacklist          */
+		0                     /* daemonize          */
+	};
+
 	nope_list * nl;
 	io_buf      buf = { 0 };
 	srv_socket  srv = { 0 }; /* just for one for now */
@@ -244,9 +346,21 @@ int main(int argc, char ** argv)
 	sockaddr_in sa_srv = { AF_INET };
 
 	//
-	nl = load_nope_list("dnswhisperer.txt", 16*1024*1024);
+	parse_args(argc, argv, &conf);
+
+	if (conf.log_file)
+	{
+		int log;
+		close(1);
+		log = open(conf.log_file, O_CREAT | O_APPEND | O_WRONLY, 0644);
+		if (log < 0)
+			die("Failed to open %s for writing, error %d\n", conf.log_file, errno);
+	}
+
+	//
+	nl = load_nope_list(conf.blacklist, 16*1024*1024);
 	if (nl)
-		printf("Loaded %u items to the nope-list\n", nl->size);
+		printf("Loaded %u patterns from %s\n", nl->size, conf.blacklist);
 
 	//
 	sk_cli = socket(AF_INET, SOCK_DGRAM, 0);
@@ -268,9 +382,19 @@ int main(int argc, char ** argv)
 	if (unblock(srv.sk) < 0)
 		die("unblock() failed with %d\n", errno);
 
-	sa_init(&sa_srv, "208.67.222.222", 53);
+	sa_init(&sa_srv, conf.dns_server, 53);
 	if (connect(srv.sk, (void*)&sa_srv, sizeof sa_srv) < 0)
 		die("connect() failed with %d\n", errno);
+
+	printf("Using %s as DNS server\n", conf.dns_server);
+
+	//
+	if (conf.daemonize)
+	{
+		printf("Daemonizing...\n");
+		daemonize( conf.log_file != NULL );
+	}
+
 
 	//
 	sk_max = (sk_cli < srv.sk) ? srv.sk : sk_cli;
@@ -290,14 +414,7 @@ int main(int argc, char ** argv)
 			break;
 
 		if (r == 0)
-		{
-			static const char * ticker = "/-\\|";
-			static size_t tick = 0;
-
-			printf("  %c\r", ticker[tick++ % 4]);
-			fflush(stdout);
 			continue;
-		}
 
 		if (FD_ISSET(sk_cli, &fdr))
 			relay_q(sk_cli, &srv, &buf, nl);

@@ -47,8 +47,8 @@ This code is few hours worth of effort. It's stable and reasonably clean, but it
 * It uses a single socket to talk to the real DNS server, so the absolute maximum of in-flight requests is **2^16**, because  the Request ID field in a DNS packet is 16 bit wide. To increase this cap the code will simply need to maintain 2+ sockets and then track which request was forwarded to the server through which socket.
 * Blacklist matching is as dumb as it gets - a linear scan with no less linear substring search of each entry in the query name.
 * There's no support for proper clean up of timed out queries.
-* Can't be daemonized at the moment.
-* Logs to stdout.
+* ~~Can't be daemonized at the moment.~~
+* ~~Logs to stdout.~~
 * Uses select() - mortifying, granted, but, hey, there are just two sockets!
 
 **Bulding**
@@ -58,6 +58,20 @@ This code is few hours worth of effort. It's stable and reasonably clean, but it
 
 **Running**
 
+On console, logging to stdout:
+
 `sudo ./dnswhisperer`
+
+On console, logging to a file:
+
+`sudo ./dnswhisperer -l dnswhisperer.log`
+
+Daemonize, without a log:
+
+`sudo ./dnswhisperer -d`
+
+Daemonize, with a log:
+
+`sudo ./dnswhisperer -d -l /var/log/dnswhisperer.log `
 
 Sudo's needed because of listening on UDP/53, which is a privileged port. Alternatively, use [setuid](https://en.wikipedia.org/wiki/Setuid).
