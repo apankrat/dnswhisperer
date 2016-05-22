@@ -351,11 +351,11 @@ int main(int argc, char ** argv)
 
 	if (conf.log_file)
 	{
-		int log;
 		close(1);
-		log = open(conf.log_file, O_CREAT | O_APPEND | O_WRONLY, 0644);
-		if (log < 0)
+		if (open(conf.log_file, O_CREAT | O_APPEND | O_WRONLY, 0644) < 0)
 			die("Failed to open %s for writing, error %d\n", conf.log_file, errno);
+
+		setvbuf(stdout, NULL, _IONBF, 0);
 	}
 
 	//
