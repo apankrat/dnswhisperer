@@ -244,7 +244,7 @@ int main(int argc, char ** argv)
 	sockaddr_in sa_srv = { AF_INET };
 
 	//
-	nl = load_nope_list("dnsfilter.txt", 16*1024*1024);
+	nl = load_nope_list("dnswhisperer.txt", 16*1024*1024);
 	if (nl)
 		printf("Loaded %u items to the nope-list\n", nl->size);
 
