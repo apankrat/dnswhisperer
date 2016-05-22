@@ -259,6 +259,7 @@ void syntax()
 	    "        -s <IP4_address>  -  DNS server to use\n"
 	    "        -d                -  daemonize\n"
 	    "        -h, -?            -  show this message\n"
+	    "\n"
 	);
 
 	exit(1);
@@ -396,7 +397,6 @@ int main(int argc, char ** argv)
 		daemonize( conf.log_file != NULL );
 	}
 
-
 	//
 	sk_max = (sk_cli < srv.sk) ? srv.sk : sk_cli;
 
@@ -411,10 +411,10 @@ int main(int argc, char ** argv)
 		FD_SET(srv.sk, &fdr);
 
 		r = select(sk_max+1, &fdr, NULL, NULL, &cycle);
-		if (r < 0)
-			break;
+		if (r < 0 && errno != EINTR)
+			die("select() failed with %d\n", errno);
 
-		if (r == 0)
+		if (r <= 0)
 			continue;
 
 		if (FD_ISSET(sk_cli, &fdr))
