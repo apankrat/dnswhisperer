@@ -1,5 +1,5 @@
 # DNS Whisperer
-DNS proxy with pattern-based response blanking.
+DNS proxy for filtering out unwanted domains.
 
 **What it is**
 
