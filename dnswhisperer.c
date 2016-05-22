@@ -291,6 +291,7 @@ void daemonize(int keep_stdout)
 {
 	pid_t pid;
 
+	fflush(0);
 	chdir("/");
 
 	pid = fork();
