@@ -15,7 +15,9 @@ In particular, this works well for devices that can't run ad-blocking capable br
 
 It listens for DNS requests on UDP 0.0.0.0:53, checks that they are queries and checks all names from the Question section against the blacklist. It remembers the result and forwards request to a real DNS server.
 
-When it receives a response, if it was a query for a blacklisted domain it changes the response code to NXDOMAIN ("not found"). It then forwards response to the client.
+When it receives a response, if it was a query for a blacklisted domain it changes IP addresses in all A answer sections to 0.0.0.0 and forwards response to the client.
+
+Note that earlier versions were changing the response code to NXDOMAIN ("not found") instead. This however stopped working with newer iOS versions as they appear to be falling back to hardcoded DNS servers in these cases, thus negating the blacklisting effort.
 
 See code for details.
 

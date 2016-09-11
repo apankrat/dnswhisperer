@@ -72,14 +72,14 @@ typedef union io_buf
 void die(const char * format, ...)
 {
 	va_list m;
-	
+
 	va_start(m, format);
 	vprintf(format, m);
 	va_end(m);
 
 	exit(1);
 }
-	
+
 int unblock(int sk)
 {
 	int r = fcntl(sk, F_GETFL);
@@ -147,14 +147,11 @@ int relay_q(int sk_cli, srv_socket * srv, io_buf * buf, nope_list * nl)
 				}
 
 				if (nl && match_nope_list(nl, q.name))
-				{
-					printf("nope -- %s\n", q.name);
 					nope_it = 1;
-				}
-				else
-				{
-					printf("        %s\n", q.name);
-				}
+
+				printf("%s %04llx -- %s\n", 
+					nope_it ? "nope --" : "       ",
+					0xffff & srv->next_id_ext, q.name);
 			}
 		}
 
@@ -201,38 +198,57 @@ int relay_r(srv_socket * srv, int sk_cli, io_buf * buf)
 			continue;
 		}
 
-//		dump_dns_packet(&buf->hdr, r);
-
 		if (DNS_GET_QR(&buf->hdr) != 1)
 		{
-			printf("      ? not a reponse\n");
+			printf("      ? %04hx -- not a response\n", buf->hdr.id);
 			continue;
 		}
 
-		//
+	//	dump_dns_response(&buf->hdr, r);
+
 		for (i=0, req=srv->requests; i<srv->pending; i++, req++)
 			if ( (req->id_ext & 0xffff) == buf->hdr.id )
 				break;
 
 		if (i == srv->pending)
 		{
-			printf("      ? unknown query %04hx\n", buf->hdr.id);
+			printf("      ? %04hx -- response for unknown query\n", buf->hdr.id);
 			continue;
 		}
 
 		buf->hdr.id = req->id_int;
 
-		if (req->nope_it)
+		if (req->nope_it && (DNS_GET_RCODE(&buf->hdr) == 0))
 		{
-			buf->hdr.flags &= htons(~0x000F);
-			buf->hdr.flags |= htons( 0x0003);
+			for (i=0; i<buf->hdr.acount; i++)
+			{
+				dns_rr a;
+				if (! dns_get_answer(&buf->hdr, r, i, &a) < 0)
+				{
+					printf("      ? %04hx -- malformed A.%u section\n", 
+						buf->hdr.id, i);
+					goto drop;
+				}
+
+				if (a.type != 1)  /* A record */
+					continue;
+
+				if (a.len != 4)
+				{
+					printf("      ? %04hx -- malformed A.%u section\n", 
+						buf->hdr.id, i);
+					goto drop;
+				}
+
+				*(uint32_t*)a.data = 0;
+			}
 		}
 
 		//
 		r = sendto(sk_cli, buf, r, 0, (void*)&req->addr, sizeof req->addr);
 		if (r < 0)
 			printf("cli < failed with %d\n", errno);
-
+drop:
 		if (i < --srv->pending)
 			srv->requests[i] = srv->requests[srv->pending];
 	}
@@ -301,7 +317,7 @@ void daemonize(int keep_stdout)
 
 	if (pid > 0)
 		exit(0);
-		
+
 	if (setsid() < 0)
 		die("setsid() failed with %d\n", errno);
 
@@ -316,7 +332,7 @@ void daemonize(int keep_stdout)
 	// stderr
 	close(2);
 	dup(0);
-		
+
 	// stdout
 	if (! keep_stdout)
 	{
@@ -375,7 +391,7 @@ int main(int argc, char ** argv)
 	sa_init(&sa_cli, NULL, 53);
 	if (bind(sk_cli, (void*)&sa_cli, sizeof sa_cli) < 0)
 		die("bind() failed with %d\n", errno);
-	
+
 	//
 	srv.sk = socket(AF_INET, SOCK_DGRAM, 0);
 	if (srv.sk < 0)
