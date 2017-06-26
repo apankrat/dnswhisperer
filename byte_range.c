@@ -53,6 +53,22 @@ void br_to_lower(byte_range * blob)
 /*
  *
  */
+uint8_t br_front(const byte_range * br)
+{
+	return (br->ptr < br->end) ? br->ptr[0] : 0;
+}
+
+uint8_t br_back(const byte_range * br)
+{
+	return (br->ptr < br->end) ? br->end[-1] : 0;
+}
+
+int br_compare(const byte_range * a, const byte_range * b)
+{
+	int r = (a->end - a->ptr) - (b->end - b->ptr);
+	return r ? r : memcmp(a->ptr, b->ptr, a->end - a->ptr);
+}
+
 const uint8_t * br_search(const byte_range * haystack, const byte_range * needle)
 {
 	size_t haystack_len = haystack->end - haystack->ptr;

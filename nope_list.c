@@ -145,8 +145,21 @@ byte_range * match_nope_list(nope_list * nl, const char * _what)
 	what.end = (uint8_t*)_what + strlen(_what);
 
 	for (i=0; i<nl->size; i++)
-		if (br_search(&what, nl->items+i))
-			return nl->items+i;
+	{
+		byte_range * rule = nl->items+i;
+
+		if (br_front(rule) == '~')
+		{
+			byte_range meat = { rule->ptr+1, rule->end };
+			if (br_compare(&what, &meat) == 0)
+				return rule;
+		}
+		else
+		{
+			if (br_search(&what, nl->items+i))
+				return rule;
+		}
+	}
 
 	return NULL;
 }
