@@ -223,7 +223,7 @@ int relay_r(srv_socket * srv, int sk_cli, io_buf * buf)
 			for (i=0; i<buf->hdr.acount; i++)
 			{
 				dns_rr a;
-				if (! dns_get_answer(&buf->hdr, r, i, &a) < 0)
+				if (dns_get_answer(&buf->hdr, r, i, &a) < 0)
 				{
 					printf("      ? %04hx -- malformed A.%u section\n", 
 						buf->hdr.id, i);
