@@ -27,7 +27,6 @@ void * zalloc(size_t bytes)
 nope_list * load_nope_list(const char * filename, size_t max_size)
 {
 	nope_list * nl = NULL;
-	const char * func;
 	struct stat st;
 	int fd = -1;
 	int r;
