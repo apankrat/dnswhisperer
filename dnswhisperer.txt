@@ -393,9 +393,7 @@ geoip.
 .amplitude.
 .servebom.
 .perfdrive.
-
 snapwidget.
-
 .smartadcheck.
 .mamydirect.
 carbonads.
