@@ -395,3 +395,14 @@ geoip.
 .perfdrive.
 
 snapwidget.
+
+.smartadcheck.
+.mamydirect.
+carbonads.
+telemetry.
+avalanch.es
+sen.imgur.com
+guzzoni
+healte.de
+books-analytics-events
+mt-ingestion-service
