@@ -136,9 +136,9 @@ int relay_q(int sk_cli, srv_socket * srv, io_buf * buf, nope_list * nl)
 		if (DNS_GET_OPCODE(&buf->hdr) == 0 && /* Query, RFC 1035 */
 		    buf->hdr.qcount != 0)
 		{
-			size_t i, n = htons(buf->hdr.qcount);
+			size_t i, qcount = htons(buf->hdr.qcount);
 
-			for (i=0; i<n; i++)
+			for (i=0; i<qcount; i++)
 			{
 				if (dns_get_question(&buf->hdr, r, i, &q) < 0)
 				{
@@ -204,7 +204,7 @@ int relay_r(srv_socket * srv, int sk_cli, io_buf * buf)
 			continue;
 		}
 
-	//	dump_dns_response(&buf->hdr, r);
+//		dump_dns_response(&buf->hdr, r);
 
 		for (i=0, req=srv->requests; i<srv->pending; i++, req++)
 			if ( (req->id_ext & 0xffff) == buf->hdr.id )
@@ -220,9 +220,12 @@ int relay_r(srv_socket * srv, int sk_cli, io_buf * buf)
 
 		if (req->nope_it && (DNS_GET_RCODE(&buf->hdr) == 0))
 		{
-			for (i=0; i<buf->hdr.acount; i++)
+			size_t acount = htons(buf->hdr.acount);
+
+			for (i=0; i<acount; i++)
 			{
 				dns_rr a;
+
 				if (dns_get_answer(&buf->hdr, r, i, &a) < 0)
 				{
 					printf("      ? %04hx -- malformed A.%u section\n", 
