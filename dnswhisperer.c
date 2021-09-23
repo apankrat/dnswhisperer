@@ -351,7 +351,8 @@ int main(int argc, char ** argv)
 {
 	app_config  conf =
 	{
-		"208.67.222.222",     /* dns_server         */
+//		"208.67.222.222",     /* dns_server (2016)  */
+		"1.1.1.1",            /* dns_server (2021)  */
 		NULL,                 /* log_file -> stdout */
 		"dnswhisperer.txt",   /* blacklist          */
 		0                     /* daemonize          */
