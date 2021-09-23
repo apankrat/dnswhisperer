@@ -80,4 +80,4 @@ Daemonize, with a log:
 Sudo's needed because of listening on UDP/53, which is a privileged port.
 
 Alternatively, use **[setuid](https://en.wikipedia.org/wiki/Setuid)** or
-**setcap**, i.e. `setcap cap_net_bind_service=+ep /path/to/dnswhisperer`.
+**setcap** (if on Linux), i.e. `setcap cap_net_bind_service=+ep /path/to/dnswhisperer`.
