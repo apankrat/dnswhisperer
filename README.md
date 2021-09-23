@@ -45,7 +45,7 @@ Line marked with **nope** are the DNS requests that were blocked.
 This code is few hours worth of effort. It's stable and reasonably clean, but it could use *lots* of improvement.
 
 * Maxium number of in-flight (pending) requests is hardcoded to **256**.
-* Real DNS address is hardcoded to **208.67.222.222**, one of OpenDNS servers. Can be overriden with `-s 1.2.3.4` command line argument (though it's IPv4 only for now).
+* Real DNS address is hardcoded to **1.1.1.1**, one of OpenDNS servers. Can be overriden with `-s 1.2.3.4` command line argument (though it's IPv4 only for now).
 * It uses a single socket to talk to the real DNS server, so the absolute maximum of in-flight requests is **2^16**, because  the Request ID field in a DNS packet is 16 bit wide. To increase this cap the code will simply need to maintain 2+ sockets and then track which request was forwarded to the server through which socket.
 * Blacklist matching is as dumb as it gets - a linear scan with no less linear substring search of each entry in the query name.
 * There's no support for proper clean up of timed out queries.
@@ -76,4 +76,6 @@ Daemonize, with a log:
 
 `sudo ./dnswhisperer -d -l /var/log/dnswhisperer.log `
 
-Sudo's needed because of listening on UDP/53, which is a privileged port. Alternatively, use [setuid](https://en.wikipedia.org/wiki/Setuid).
+Sudo's needed because of listening on UDP/53, which is a privileged port.
+Alternatively, use **[setuid](https://en.wikipedia.org/wiki/Setuid)** or
+**setcap** (`setcap cap_net_bind_service=+ep /path/to/dnswhisperer`).
